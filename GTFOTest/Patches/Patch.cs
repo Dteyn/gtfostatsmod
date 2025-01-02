@@ -53,7 +53,7 @@ namespace GTFOTest.Patches
             else if (eventName == "gs_ExpeditionFail" || eventName == "gs_ExpeditionSuccess")
             {
                 Console.WriteLine("Expedition ended");
-                ExportRunDownData();
+                ExportRunDownData(eventName);
                 StopPositionCollector();
 
             }
@@ -61,7 +61,7 @@ namespace GTFOTest.Patches
             else if(eventName == "gs_ExpeditionAbort")
             {
                 Console.WriteLine("Expedition Aborted");
-                ExportRunDownData();
+                ExportRunDownData(eventName);
                 StopPositionCollector();
             }
 
@@ -69,7 +69,7 @@ namespace GTFOTest.Patches
 
             else if (eventName == "player_downed")
             {
-                DanosStaticStore.currentRunDownDataStore.AddPlayerDownData((long)player.Owner.Lookup);
+                DanosStaticStore.currentRunDownDataStore.AddPlayerDownData((long)player.Owner.Lookup, player);
             }
             else if (eventName == "player_reload")
             {
@@ -217,7 +217,7 @@ namespace GTFOTest.Patches
             }
         }
 
-        private static void ExportRunDownData()
+        private static void ExportRunDownData(string reason)
         {
             try
             {
@@ -233,6 +233,9 @@ namespace GTFOTest.Patches
                 };
                 // Set the end timestamp
                 DanosStaticStore.currentRunDownDataStore.et = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                //Set the rer
+                DanosStaticStore.currentRunDownDataStore.rer = reason;
 
                 // Serialize to JSON
                 string json = JsonSerializer.Serialize(DanosStaticStore.currentRunDownDataStore, options);
@@ -319,7 +322,8 @@ namespace GTFOTest.Patches
                     en = expeditionTier, 
                     ei = expeditionIndex,
                     rsg = sessionid,
-                    msid = GetLocalPlayerSteamID()
+                    msid = GetLocalPlayerSteamID(),
+                    mv = DanosStaticStore.ModVersion
                 };
 
                 DanosStaticStore.currentRunDownDataStore = currentRunDownDataStore;

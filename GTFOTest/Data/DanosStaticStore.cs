@@ -16,11 +16,14 @@ namespace GTFOTest.Data
 
     public class DanosStaticStore
     {
+        public static string ModVersion { get; set; } = "0.5.0"; // ModVersion
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();
     }
 
     public class DanosRunDownDataStore
     {
+        public string mv { get; set; } = DanosStaticStore.ModVersion; // ModVersion
+        public string rer { get; set; } = ""; // RunEndReason
         public long st { get; set; } = 0; // StartTimestamp
         public long et { get; set; } = 0; // EndTimestamp
         public string rid { get; set; } = ""; // RundownId
@@ -55,14 +58,30 @@ namespace GTFOTest.Data
         public Dictionary<long, string> pl { get; set; } = new Dictionary<long, string>(); // Players
         public Dictionary<long, List<DanosPositionalData>> pd { get; set; } = new Dictionary<long, List<DanosPositionalData>>(); // PositionalData grouped by SteamId
         public Dictionary<long, DanosSummaryData> sd { get; set; } = new Dictionary<long, DanosSummaryData>(); // SummaryData grouped by SteamId
-        public void AddPlayerDownData(long sid)
+        public Dictionary<long, DanosDeathSummary> ds { get; set; } = new Dictionary<long, DanosDeathSummary>(); // DeathSummary grouped by SteamId
+        public void AddPlayerDownData(long sid, Player.PlayerAgent playerAgent)
         {
             if (!sd.ContainsKey(sid))
             {
                 sd[sid] = new DanosSummaryData();
 
+
+
             }
             sd[sid].downs++;
+
+
+            if (!ds.ContainsKey(sid))
+            {
+                ds[sid] = new DanosDeathSummary();
+
+
+            }
+
+            ds[sid].x = (int)playerAgent.transform.position.x;
+            ds[sid].z = (int)playerAgent.transform.position.z;
+
+
         }
         public void AddPlayerReloadData(long sid)
         {
@@ -174,6 +193,13 @@ namespace GTFOTest.Data
         public long Timestamp { get; set; } // Full Timestamp
         public long sid { get; set; } // SteamId
         public string Name { get; set; } // Player Name
+    }
+
+    //DownSummary to store heatmap data
+    public class DanosDeathSummary
+    {
+        public int x { get; set; } = 0; // X
+        public int z { get; set; } = 0; // Z
     }
 
 
