@@ -7,20 +7,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HarmonyLib;
-using GTFOTest.Patches;
+using GTFOStats.Patches;
+using GTFOStats.Data;
 
-namespace GTFOTest
+namespace GTFOStats
 {
-    [BepInPlugin("danos.GTFOStats", "GTFOStats", "0.5.1")]
+    [BepInPlugin("danos.GTFOStats", "GTFOStats", DanosStaticStore.ModVersion)]
     public class Plugin : BasePlugin
     {
         public override void Load()
         {
             // Plugin startup logic
             Log.LogInfo("GTFOStats is loaded!");
-
-            //Set danos static store mod version
-            Data.DanosStaticStore.ModVersion = "0.5.1";
 
             var harm =new Harmony("danos.GTFOStats");
 

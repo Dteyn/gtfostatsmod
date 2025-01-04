@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace GTFOTest.Data
+namespace GTFOStats.Data
 {
     public class OneDecimalJsonConverter : JsonConverter<float>
     {

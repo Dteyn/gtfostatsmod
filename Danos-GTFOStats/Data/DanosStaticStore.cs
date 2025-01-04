@@ -1,4 +1,5 @@
 ﻿using GameEvent;
+using Player;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace GTFOTest.Data
+namespace GTFOStats.Data
 {
 
 
@@ -16,12 +17,23 @@ namespace GTFOTest.Data
 
     public class DanosStaticStore
     {
-        public static string ModVersion { get; set; } = "0.5.0"; // ModVersion
+        public const string ModVersion = "0.5.3"; // ModVersion
+        public static List<Func<string>> JsonContributors = new();
+
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();
+
+        public static void RegisterJsonContributor(Func<string> contributor)
+        {
+            if (contributor != null)
+            {
+                JsonContributors.Add(contributor);
+            }
+        }
     }
 
     public class DanosRunDownDataStore
     {
+        public bool wasHost { get; set; } = false; // WasHost
         public string mv { get; set; } = DanosStaticStore.ModVersion; // ModVersion
         public string rer { get; set; } = ""; // RunEndReason
         public long st { get; set; } = 0; // StartTimestamp
@@ -78,8 +90,8 @@ namespace GTFOTest.Data
 
             }
 
-            ds[sid].x = (int)playerAgent.transform.position.x;
-            ds[sid].z = (int)playerAgent.transform.position.z;
+            ds[sid].x = playerAgent.transform.position.x;
+            ds[sid].z = playerAgent.transform.position.z;
 
 
         }
@@ -173,6 +185,17 @@ namespace GTFOTest.Data
             });
         }
 
+        public void AddPlayerToSummary(long lookup, PlayerAgent playerAgent)
+        {
+            if (!pl.ContainsKey(lookup))
+            {
+                pl[lookup] = playerAgent.PlayerName;
+            }
+            if (!sd.ContainsKey(lookup))
+            {
+                sd[lookup] = new DanosSummaryData();
+            }
+        }
     }
 
     public class DanosPositionalData
@@ -198,8 +221,11 @@ namespace GTFOTest.Data
     //DownSummary to store heatmap data
     public class DanosDeathSummary
     {
-        public int x { get; set; } = 0; // X
-        public int z { get; set; } = 0; // Z
+        [JsonConverter(typeof(OneDecimalJsonConverter))]
+        public float x { get; set; } = 0; // X
+        [JsonConverter(typeof(OneDecimalJsonConverter))]
+        public float z { get; set; } = 0; // Z
+
     }
 
 

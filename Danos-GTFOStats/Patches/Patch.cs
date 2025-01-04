@@ -11,12 +11,13 @@ using UnityEngine;
 using UnityEngine.Diagnostics;
 using System.Text.Json;
 using System.Collections;
-using GTFOTest.Data;
+using GTFOStats.Data;
 using BepInEx.Unity.IL2CPP.Utils;
 using System.Net.Http.Headers;
 using System.Net;
 using static UnityEngine.Rendering.PostProcessing.BloomRenderer;
-namespace GTFOTest.Patches
+using SNetwork;
+namespace GTFOStats.Patches
 {
     [HarmonyPatch]
     internal static class GameStatePatch
@@ -226,35 +227,82 @@ namespace GTFOTest.Patches
                     Debug.LogError("No rundown data store to export.");
                     return;
                 }
+
                 var options = new JsonSerializerOptions
                 {
-                    WriteIndented = true, // Optional, for readability
+                    WriteIndented = true,
                     Converters = { new OneDecimalJsonConverter() }
                 };
-                // Set the end timestamp
+
                 DanosStaticStore.currentRunDownDataStore.et = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                //Set the rer
                 DanosStaticStore.currentRunDownDataStore.rer = reason;
+                DanosStaticStore.currentRunDownDataStore.wasHost = SNet.IsMaster;
 
-                // Serialize to JSON
+
+                //Check that all players are in summary data, if not add them.
+                var allPlayers = PlayerManager.PlayerAgentsInLevel;
+                foreach (PlayerAgent playerAgent in allPlayers)
+                {
+                    if (playerAgent == null || playerAgent.m_replicator == null)
+                        continue;
+                    DanosStaticStore.currentRunDownDataStore.AddPlayerToSummary((long)playerAgent.m_replicator.OwningPlayer.Lookup, playerAgent);
+                }
+
+
+
+                // Serialize your main JSON
                 string json = JsonSerializer.Serialize(DanosStaticStore.currentRunDownDataStore, options);
 
-                // Write to file
+                // Collect additional JSON contributions
+                var additionalData = new List<string>();
+                foreach (var contributor in DanosStaticStore.JsonContributors)
+                {
+                    try
+                    {
+                        string additionalJson = contributor.Invoke();
+                        if (!string.IsNullOrEmpty(additionalJson))
+                        {
+                            additionalData.Add(additionalJson);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error invoking JSON contributor: {ex.Message}");
+                    }
+                }
+
+                // Merge additional JSON chunks into the main JSON object
+                var mainData = JsonSerializer.Deserialize<Dictionary<string, object>>(json, options);
+                foreach (var additionalJson in additionalData)
+                {
+                    var additionalDict = JsonSerializer.Deserialize<Dictionary<string, object>>(additionalJson, options);
+                    if (additionalDict != null)
+                    {
+                        foreach (var kvp in additionalDict)
+                        {
+                            mainData[kvp.Key] = kvp.Value; // Overwrite or add new keys
+                        }
+                    }
+                }
+
+                // Serialize the merged data back to JSON
+                string mergedJson = JsonSerializer.Serialize(mainData, options);
+
+                // Write to file (optional)
                 string filePath = Path.Combine(Application.persistentDataPath, "RunDownData.json");
-                File.WriteAllText(filePath, json);
+                File.WriteAllText(filePath, mergedJson);
 
                 Console.WriteLine($"Rundown data exported to {filePath}");
 
-                // Post data to API but await it in a non async method
-                PostDataToAPI(json).Wait();
-
+                // Post the merged JSON
+                PostDataToAPI(mergedJson).Wait();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error exporting rundown data: {ex.Message}");
             }
         }
+
 
         private static async Task PostDataToAPI(string json)
         {
@@ -308,9 +356,8 @@ namespace GTFOTest.Patches
                 var sessionid = expdata.sessionGUID.m_data.ToString();
 
 
+                
 
-
-               
 
 
 
