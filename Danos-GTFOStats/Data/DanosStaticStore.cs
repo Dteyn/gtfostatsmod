@@ -17,7 +17,7 @@ namespace GTFOStats.Data
 
     public class DanosStaticStore
     {
-        public const string ModVersion = "0.5.3"; // ModVersion
+        public const string ModVersion = "0.5.4"; // ModVersion
         public static List<Func<string>> JsonContributors = new();
 
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();
@@ -54,6 +54,8 @@ namespace GTFOStats.Data
         public int hibernatingEnemiesWokeUp { get; set; } = 0; // Hibernating enemies woke up
         public int enemiesDeadFromMelee { get; set; } = 0; // Enemies killed by melee
         public int scoutEnemiesDeadFromMelee { get; set; } = 0; // Scout enemies killed by melee
+
+        public DanosExtraRundownData extraData { get; set; } = new DanosExtraRundownData(); // Extra data for the rundown
 
         // Methods to increment counters
         public void IncrementBioscanStart() => bioscanStarts++;
@@ -228,7 +230,20 @@ namespace GTFOStats.Data
 
     }
 
+    public class DanosExtraRundownData
+    {
+        public string storyTitle { get; set; } = "";
+        public string storyDescription { get; set; } = "";
+        public string rundownKey { get; set; } = "";
 
+        public string rundownprefix { get; set; } = "";
+        public string rundownName { get; set; } = "";
+        public string devInfo { get; set; } = "";
+        public string matchmakingtier { get; set; } = "";
+        public string desc2 { get; set; } = "";
+        public string depth { get; set; } = "";
+        public string otherTitle { get; set; } = "";
+    }
     public class DanosSummaryData
     {
         public int reloads { get; set; } = 0; // Reloads

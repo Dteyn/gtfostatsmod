@@ -17,6 +17,8 @@ using System.Net.Http.Headers;
 using System.Net;
 using static UnityEngine.Rendering.PostProcessing.BloomRenderer;
 using SNetwork;
+using GameData;
+using Il2CppSystem.Data;
 namespace GTFOStats.Patches
 {
     [HarmonyPatch]
@@ -337,9 +339,9 @@ namespace GTFOStats.Patches
 
         }
 
+        
 
-
-        private static void InitializeRunDownData()
+            private static void InitializeRunDownData()
         {
             try
             {
@@ -355,10 +357,51 @@ namespace GTFOStats.Patches
 
                 var sessionid = expdata.sessionGUID.m_data.ToString();
 
+                DanosExtraRundownData extraData = new DanosExtraRundownData();
 
-                
+                try
+                {
 
 
+                    string name = "";
+                    string otherTitle = "";
+                    string description = "";
+                    if (RundownManager.TryGetIdFromLocalRundownKey(RundownManager.ActiveRundownKey, out uint rundownID))
+                    {
+                        RundownDataBlock datab = RundownDataBlock.GetBlock(rundownID);
+                        name = datab.StorytellingData.Title;
+                        description = datab.StorytellingData.SurfaceDescription;
+                        otherTitle = datab.StorytellingData.ExternalExpTitle;
+                    }
+
+                    ExpeditionInTierData data = RundownManager.ActiveExpedition;
+                    DescriptiveData nameData = data.Descriptive;
+                    string prefix = nameData.Prefix + (!nameData.SkipExpNumberInName ? (expeditionIndex + 1).ToString() : "");
+                    string nameb = nameData.PublicName + (nameData.IsExtraExpedition ? "://EXT" : "");
+                    string devInfo = nameData.DevInfo;
+                    string matchmakingtier = nameData.CustomMatchmakingTier.ToString();
+                    string desc2 = nameData.ExpeditionDescription;
+                    string depth = nameData.ExpeditionDepth.ToString();
+                    extraData = new DanosExtraRundownData
+                    {
+                        rundownKey = RundownManager.ActiveRundownKey,
+                        rundownName = nameb,
+                        otherTitle = otherTitle,
+                        rundownprefix = prefix,
+                        storyDescription = description,
+                        storyTitle = name,
+                        devInfo = devInfo,
+                        matchmakingtier = matchmakingtier,
+                        desc2 = desc2,
+                        depth = depth,
+
+
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error initializing DanosExtraRundownData: {ex.Message}");
+                }
 
 
 
@@ -370,7 +413,8 @@ namespace GTFOStats.Patches
                     ei = expeditionIndex,
                     rsg = sessionid,
                     msid = GetLocalPlayerSteamID(),
-                    mv = DanosStaticStore.ModVersion
+                    mv = DanosStaticStore.ModVersion,
+                    extraData = extraData
                 };
 
                 DanosStaticStore.currentRunDownDataStore = currentRunDownDataStore;
