@@ -69,6 +69,11 @@ namespace GTFOStats.Patches
             }
 
 
+            if(DanosStaticStore.currentRunDownDataStore == null)
+            {
+                return;
+            }
+
 
             else if (eventName == "player_downed")
             {
@@ -339,92 +344,110 @@ namespace GTFOStats.Patches
 
         }
 
-        
 
-            private static void InitializeRunDownData()
+
+        private static void InitializeRunDownData()
         {
             try
             {
-                
-                pActiveExpedition expdata = RundownManager.GetActiveExpeditionData();
-                if ((expdata.tier == eRundownTier.TierA) && (expdata.expeditionIndex == 0)) {  }
+                // Initialize default values for the rundown data store
+                DanosRunDownDataStore currentRunDownDataStore = new DanosRunDownDataStore
+                {
+                    st = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), // Current timestamp
+                    msid = GetLocalPlayerSteamID(), // Steam ID
+                    mv = DanosStaticStore.ModVersion // Mod version
+                };
 
-                var rundownString = AchievementManager.GetCurrentRundownName().ToString();
-                var expeditionTier = expdata.tier.ToString();
-                var expeditionIndex = expdata.expeditionIndex.ToString();
+                // Assign simple values first
+                DanosStaticStore.currentRunDownDataStore = currentRunDownDataStore;
 
+                string expeditionTier = string.Empty;
+                string expeditionIndex = string.Empty;
+                string sessionid = string.Empty;
 
-
-                var sessionid = expdata.sessionGUID.m_data.ToString();
-
-                DanosExtraRundownData extraData = new DanosExtraRundownData();
-
+                // Fetch active expedition data
                 try
                 {
-
-
-                    string name = "";
-                    string otherTitle = "";
-                    string description = "";
-                    if (RundownManager.TryGetIdFromLocalRundownKey(RundownManager.ActiveRundownKey, out uint rundownID))
+                    pActiveExpedition expdata = RundownManager.GetActiveExpeditionData();
+                    if (expdata == null)
                     {
-                        RundownDataBlock datab = RundownDataBlock.GetBlock(rundownID);
-                        name = datab.StorytellingData.Title;
-                        description = datab.StorytellingData.SurfaceDescription;
-                        otherTitle = datab.StorytellingData.ExternalExpTitle;
+                        throw new Exception("Active expedition data is null");
                     }
 
-                    ExpeditionInTierData data = RundownManager.ActiveExpedition;
-                    DescriptiveData nameData = data.Descriptive;
-                    string prefix = nameData.Prefix + (!nameData.SkipExpNumberInName ? (expeditionIndex + 1).ToString() : "");
-                    string nameb = nameData.PublicName + (nameData.IsExtraExpedition ? "://EXT" : "");
-                    string devInfo = nameData.DevInfo;
-                    string matchmakingtier = nameData.CustomMatchmakingTier.ToString();
-                    string desc2 = nameData.ExpeditionDescription;
-                    string depth = nameData.ExpeditionDepth.ToString();
-                    extraData = new DanosExtraRundownData
-                    {
-                        rundownKey = RundownManager.ActiveRundownKey,
-                        rundownName = nameb,
-                        otherTitle = otherTitle,
-                        rundownprefix = prefix,
-                        storyDescription = description,
-                        storyTitle = name,
-                        devInfo = devInfo,
-                        matchmakingtier = matchmakingtier,
-                        desc2 = desc2,
-                        depth = depth,
-
-
-                    };
+                    expeditionTier = expdata.tier.ToString();
+                    expeditionIndex = expdata.expeditionIndex.ToString();
+                    sessionid = expdata.sessionGUID.m_data.ToString();
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error initializing DanosExtraRundownData: {ex.Message}");
+                    Debug.LogError($"Error fetching expedition data: {ex.Message}");
                 }
 
+                // Initialize extra rundown data
+                DanosExtraRundownData extraData = new DanosExtraRundownData();
+                string rundownString = string.Empty;
 
-
-                DanosRunDownDataStore currentRunDownDataStore = new DanosRunDownDataStore
+                try
                 {
-                    st = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    rid = rundownString, 
-                    en = expeditionTier, 
-                    ei = expeditionIndex,
-                    rsg = sessionid,
-                    msid = GetLocalPlayerSteamID(),
-                    mv = DanosStaticStore.ModVersion,
-                    extraData = extraData
-                };
+                    string storyTitle = string.Empty;
+                    string externalTitle = string.Empty;
+                    string surfaceDescription = string.Empty;
 
+                    if (RundownManager.TryGetIdFromLocalRundownKey(RundownManager.ActiveRundownKey, out uint rundownID))
+                    {
+                        RundownDataBlock dataBlock = RundownDataBlock.GetBlock(rundownID);
+                        if (dataBlock?.StorytellingData != null)
+                        {
+                            storyTitle = dataBlock.StorytellingData.Title;
+                            surfaceDescription = dataBlock.StorytellingData.SurfaceDescription;
+                            externalTitle = dataBlock.StorytellingData.ExternalExpTitle;
+                        }
+                    }
+
+                    ExpeditionInTierData expeditionData = RundownManager.ActiveExpedition;
+                    DescriptiveData nameData = expeditionData.Descriptive;
+
+                    string prefix = nameData.Prefix + (!nameData.SkipExpNumberInName ? (expeditionIndex + 1).ToString() : "");
+                    string expeditionName = nameData.PublicName + (nameData.IsExtraExpedition ? "://EXT" : "");
+
+                    extraData = new DanosExtraRundownData
+                    {
+                        rundownKey = RundownManager.ActiveRundownKey,
+                        rundownName = expeditionName,
+                        otherTitle = externalTitle,
+                        rundownprefix = prefix,
+                        storyDescription = surfaceDescription,
+                        storyTitle = storyTitle,
+                        devInfo = nameData.DevInfo,
+                        matchmakingtier = nameData.CustomMatchmakingTier.ToString(),
+                        desc2 = nameData.ExpeditionDescription,
+                        depth = nameData.ExpeditionDepth.ToString()
+                    };
+
+                    rundownString = prefix;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error initializing extra rundown data: {ex.Message}");
+                }
+
+                // Update the rundown data store with additional data
+                currentRunDownDataStore.rid = rundownString;
+                currentRunDownDataStore.en = expeditionTier;
+                currentRunDownDataStore.ei = expeditionIndex;
+                currentRunDownDataStore.rsg = sessionid;
+                currentRunDownDataStore.extraData = extraData;
+
+                // Store the updated data
                 DanosStaticStore.currentRunDownDataStore = currentRunDownDataStore;
-
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Error initializing DanosRunDownDataStore: {ex.Message}");
             }
         }
+
+
 
         private static void LogEventData(string eventName, PlayerAgent player, string customString, float floatVal = 0f, Il2CppSystem.Collections.Generic.Dictionary<string, string> customAnalyticsPayload = null)
         {
@@ -471,11 +494,29 @@ namespace GTFOStats.Patches
             try
             {
                 var localPlayer = PlayerManager.GetLocalPlayerAgent();
+                if(localPlayer == null)
+                {
+                    return -1;
+                }
+
+                if(localPlayer.m_replicator == null)
+                {
+                    return -2;
+                }
+
+                if (localPlayer.m_replicator.OwningPlayer == null)
+                {
+                    return -3;
+                }
+
+                
+
+
                 return (long)(localPlayer?.m_replicator?.OwningPlayer.Lookup ?? 0);
             }
             catch
             {
-                return 0;
+                return -4;
             }
         }
 

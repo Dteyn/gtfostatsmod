@@ -17,7 +17,7 @@ namespace GTFOStats.Data
 
     public class DanosStaticStore
     {
-        public const string ModVersion = "0.5.4"; // ModVersion
+        public const string ModVersion = "0.5.5"; // ModVersion
         public static List<Func<string>> JsonContributors = new();
 
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();
@@ -43,7 +43,7 @@ namespace GTFOStats.Data
         public string ei { get; set; } = ""; // expeditionindex
         public string rsg { get; set; } = ""; // RundownSessionGUID
         public long msid { get; set; } = 0; // MySteamId
-
+        public uint xp { get; set; } = 0; // XP
         // Global counters for events
         public int bioscanStarts { get; set; } = 0; // Bioscan start events
         public int scoutEnemiesDead { get; set; } = 0; // Scout enemies killed
@@ -166,6 +166,12 @@ namespace GTFOStats.Data
                 sd[sid] = new DanosSummaryData();
             }
             sd[sid].hackingSuccesses++;
+        }
+
+        //Add XP
+        public void AddXP(uint xp)
+        {
+            this.xp += xp;
         }
 
 
