@@ -10,7 +10,6 @@ using HarmonyLib;
 using GTFOStats.Patches;
 using GTFOStats.Data;
 using System.Reflection;
-using static RootMotion.FinalIK.IKSolverVR;
 
 namespace GTFOStats
 {
