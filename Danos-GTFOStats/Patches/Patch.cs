@@ -19,10 +19,13 @@ using static UnityEngine.Rendering.PostProcessing.BloomRenderer;
 using SNetwork;
 using GameData;
 using Il2CppSystem.Data;
+using Dissonance;
+using Il2CppInterop.Runtime;
+using System.Reflection;
 namespace GTFOStats.Patches
 {
     [HarmonyPatch]
-    internal static class GameStatePatch
+    public static class GameStatePatch
     {
         private static Coroutine positionCollectorCoroutine;
 
@@ -440,6 +443,7 @@ namespace GTFOStats.Patches
 
                 // Store the updated data
                 DanosStaticStore.currentRunDownDataStore = currentRunDownDataStore;
+
             }
             catch (Exception ex)
             {
@@ -447,7 +451,7 @@ namespace GTFOStats.Patches
             }
         }
 
-
+        
 
         private static void LogEventData(string eventName, PlayerAgent player, string customString, float floatVal = 0f, Il2CppSystem.Collections.Generic.Dictionary<string, string> customAnalyticsPayload = null)
         {
@@ -489,7 +493,7 @@ namespace GTFOStats.Patches
             }
         }
 
-        private static long GetLocalPlayerSteamID()
+        public static long GetLocalPlayerSteamID()
         {
             try
             {

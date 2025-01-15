@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace GTFOStats.Data
 {
@@ -17,7 +19,7 @@ namespace GTFOStats.Data
 
     public class DanosStaticStore
     {
-        public const string ModVersion = "0.5.5"; // ModVersion
+        public const string ModVersion = "0.6.0"; // ModVersion
         public static List<Func<string>> JsonContributors = new();
 
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();
@@ -73,6 +75,24 @@ namespace GTFOStats.Data
         public Dictionary<long, List<DanosPositionalData>> pd { get; set; } = new Dictionary<long, List<DanosPositionalData>>(); // PositionalData grouped by SteamId
         public Dictionary<long, DanosSummaryData> sd { get; set; } = new Dictionary<long, DanosSummaryData>(); // SummaryData grouped by SteamId
         public Dictionary<long, DanosDeathSummary> ds { get; set; } = new Dictionary<long, DanosDeathSummary>(); // DeathSummary grouped by SteamId
+        public Dictionary<string, int> edc { get; set; } = new Dictionary<string, int>(); // EnemyDeathCounts
+
+
+
+        //function to add to the enemy death count
+        public  void AddEnemyDeathCount(string enemyName)
+        {
+            if (edc.ContainsKey(enemyName))
+            {
+                edc[enemyName]++;
+            }
+            else
+            {
+                edc[enemyName] = 1;
+            }
+
+            Debug.Log("Enemy Death Count: " + enemyName + " " + edc[enemyName]);
+        }
         public void AddPlayerDownData(long sid, Player.PlayerAgent playerAgent)
         {
             if (!sd.ContainsKey(sid))
@@ -94,6 +114,26 @@ namespace GTFOStats.Data
 
             ds[sid].x = playerAgent.transform.position.x;
             ds[sid].z = playerAgent.transform.position.z;
+
+            ds[sid].ts = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var cause = DanosDamageInfoStore.GetLastDamage(sid);
+
+            var allcausesfordebug = DanosDamageInfoStore._lastDamageByPlayer[sid];
+            //serialize all causes for debug and log it
+            var json = JsonSerializer.Serialize(allcausesfordebug);
+            Debug.Log(json);
+
+
+
+
+            if (cause == null)
+            {
+                ds[sid].cause = "Unknown";
+            }
+            else
+            {
+                ds[sid].cause = cause.SourceType;
+            }
 
 
         }
@@ -233,6 +273,8 @@ namespace GTFOStats.Data
         public float x { get; set; } = 0; // X
         [JsonConverter(typeof(OneDecimalJsonConverter))]
         public float z { get; set; } = 0; // Z
+        public long ts { get; set; } = 0; // Timestamp
+        public string cause { get; set; } = ""; // Cause
 
     }
 

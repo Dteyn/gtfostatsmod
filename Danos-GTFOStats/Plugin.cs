@@ -26,6 +26,8 @@ namespace GTFOStats
 
             _harmony = new Harmony("danos.GTFOStats");
             _harmony.PatchAll(typeof(GameStatePatch));
+            _harmony.PatchAll(typeof(DanosTerminalCommandPatch));
+            _harmony.PatchAll(typeof(DamagePatches));
             Log.LogInfo("GTFOStats is loaded!");
 
             // Define patches dynamically

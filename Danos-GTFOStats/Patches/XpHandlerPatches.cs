@@ -32,7 +32,7 @@ namespace GTFOStats.Patches
 
                 if (DanosStaticStore.currentRunDownDataStore != null)
                 {
-                    DanosStaticStore.currentRunDownDataStore.xp += xpGain;
+                    DanosStaticStore.currentRunDownDataStore.AddXP(xpGain);
                 }
             }
             catch (Exception e)
