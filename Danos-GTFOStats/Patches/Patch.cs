@@ -368,6 +368,9 @@ namespace GTFOStats.Patches
                 string expeditionIndex = string.Empty;
                 string sessionid = string.Empty;
 
+                // Clear the instance counter for enemy death counter
+                DamagePatches.ClearCountedEnemies();
+                
                 // Fetch active expedition data
                 try
                 {
