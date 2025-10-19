@@ -17,6 +17,9 @@ namespace GTFOStats.Patches
     [HarmonyPatch]
     public class DamagePatches
     {
+        // Track enemies we've already counted
+        private static readonly HashSet<int> countedEnemies = new();
+        
         [HarmonyPatch(typeof(EnemyAgent), "OnDead")]
         [HarmonyPrefix]
         public static bool OnDeadPrefix(EnemyAgent __instance)
@@ -47,8 +50,15 @@ namespace GTFOStats.Patches
                 return true;
             }
 
+            // Each enemy agent should only be counted once
+            int id = __instance.gameObject != null ? __instance.gameObject.GetInstanceID() : __instance.GetInstanceID();
+            if (!countedEnemies.Add(id))
+            {
+                // Already counted this instance, skip
+                return true;
+            }
+            
             DanosStaticStore.currentRunDownDataStore.AddEnemyDeathCount(enemyName);
-
 
             return true;
 
@@ -130,6 +140,11 @@ namespace GTFOStats.Patches
             return true;
         }
 
+        public static void ClearCountedEnemies()
+        {
+            countedEnemies.Clear();
+        }
+        
     }
 
 
