@@ -47,6 +47,12 @@ namespace GTFOStats.Patches
                 return true;
             }
 
+            //There are two calls to ondead, lets make sure its when the enemy is actually dead.
+            if (__instance.m_alive == true)
+            {
+                return true;
+            }
+
             DanosStaticStore.currentRunDownDataStore.AddEnemyDeathCount(enemyName);
 
 

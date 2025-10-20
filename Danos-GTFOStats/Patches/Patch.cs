@@ -259,9 +259,10 @@ namespace GTFOStats.Patches
                 }
 
 
+                DanosRunDownDataStore anonymizedStore = DanosAnonymization.AnonymizeRundownStore(DanosStaticStore.currentRunDownDataStore);
 
                 // Serialize your main JSON
-                string json = JsonSerializer.Serialize(DanosStaticStore.currentRunDownDataStore, options);
+                string json = JsonSerializer.Serialize(anonymizedStore, options);
 
                 // Collect additional JSON contributions
                 var additionalData = new List<string>();
