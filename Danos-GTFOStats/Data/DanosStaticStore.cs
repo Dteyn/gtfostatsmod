@@ -19,7 +19,7 @@ namespace GTFOStats.Data
 
     public class DanosStaticStore
     {
-        public const string ModVersion = "0.6.0"; // ModVersion
+        public const string ModVersion = "0.7.0"; // ModVersion
         public static List<Func<string>> JsonContributors = new();
 
         public static DanosRunDownDataStore currentRunDownDataStore { get; set; } = new DanosRunDownDataStore();

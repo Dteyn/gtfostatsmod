@@ -10,6 +10,7 @@ using HarmonyLib;
 using GTFOStats.Patches;
 using GTFOStats.Data;
 using System.Reflection;
+using UnityEngine;
 
 namespace GTFOStats
 {
@@ -18,17 +19,30 @@ namespace GTFOStats
 
     public class DanosPlugin : BasePlugin
     {
-        private Harmony _harmony;
+        public static Harmony HarmonyInstance { get; private set; }
+        private static readonly HashSet<Type> AppliedPatches = new HashSet<Type>();
+        private static readonly HashSet<string> AppliedDynamicPatches = new HashSet<string>();
+
+        private static bool _additionalPatchesApplied = false;
 
         public override void Load()
         {
-            
+            HarmonyInstance = new Harmony("danos.GTFOStats");
+            ApplyPatch(typeof(GameStateManagerPatch)); // Initial patch
+            Debug.Log("GTFOStats loaded and initial patches applied.");
+        }
 
-            _harmony = new Harmony("danos.GTFOStats");
-            _harmony.PatchAll(typeof(GameStatePatch));
-            _harmony.PatchAll(typeof(DanosTerminalCommandPatch));
-            _harmony.PatchAll(typeof(DamagePatches));
-            Log.LogInfo("GTFOStats is loaded!");
+        public static void ApplyAdditionalPatches()
+        {
+            if (_additionalPatchesApplied)
+            {
+                Debug.Log("Additional patches already applied.");
+                return;
+            }
+            ApplyPatch(typeof(GameStatePatch));
+            ApplyPatch(typeof(DanosTerminalCommandPatch));
+            ApplyPatch(typeof(DamagePatches));
+            Debug.Log("GTFOStats is loaded!");
 
             // Define patches dynamically
             var patchConfigs = DanosPatchManager.GetPatchConfigurations();
@@ -38,25 +52,32 @@ namespace GTFOStats
                 ApplyDynamicPatch(patchConfig);
             }
 
+            _additionalPatchesApplied = true;
         }
 
 
-        // Dynamic patching to keep the project lightweight and avoid dependencies on other mods.
-        private void ApplyDynamicPatch(DanosPatchConfiguration patchConfig)
+        private static void ApplyDynamicPatch(DanosPatchConfiguration patchConfig)
         {
             try
             {
+                string patchIdentifier = $"{patchConfig.TargetClass}.{patchConfig.TargetMethod}.{patchConfig.PostfixMethod}";
+                if (AppliedDynamicPatches.Contains(patchIdentifier))
+                {
+                    Debug.Log($"Patch already applied: {patchIdentifier}");
+                    return;
+                }
+
                 Type targetType = AccessTools.TypeByName(patchConfig.TargetClass);
                 if (targetType == null)
                 {
-                    Log.LogWarning($"Target class '{patchConfig.TargetClass}' not found. Skipping patch.");
+                    Debug.Log($"Target class '{patchConfig.TargetClass}' not found. Skipping patch.");
                     return;
                 }
 
                 MethodInfo targetMethod = AccessTools.Method(targetType, patchConfig.TargetMethod);
                 if (targetMethod == null)
                 {
-                    Log.LogWarning($"Target method '{patchConfig.TargetMethod}' not found in class '{patchConfig.TargetClass}'. Skipping patch.");
+                    Debug.Log($"Target method '{patchConfig.TargetMethod}' not found in class '{patchConfig.TargetClass}'. Skipping patch.");
                     return;
                 }
 
@@ -67,23 +88,38 @@ namespace GTFOStats
                 Type postfixClass = Type.GetType(className);
                 if (postfixClass == null)
                 {
-                    Log.LogWarning($"Postfix class '{className}' not found. Skipping patch.");
+                    Debug.Log($"Postfix class '{className}' not found. Skipping patch.");
                     return;
                 }
 
                 MethodInfo postfixMethod = postfixClass.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                 if (postfixMethod == null)
                 {
-                    Log.LogWarning($"Postfix method '{patchConfig.PostfixMethod}' not found. Skipping patch.");
+                    Debug.Log($"Postfix method '{patchConfig.PostfixMethod}' not found. Skipping patch.");
                     return;
                 }
 
-                _harmony.Patch(targetMethod, postfix: new HarmonyMethod(postfixMethod));
-                Log.LogInfo($"Successfully patched {patchConfig.TargetClass}.{patchConfig.TargetMethod}");
+                HarmonyInstance.Patch(targetMethod, postfix: new HarmonyMethod(postfixMethod));
+                AppliedDynamicPatches.Add(patchIdentifier); // Mark this patch as applied
+                Debug.Log($"Successfully patched {patchConfig.TargetClass}.{patchConfig.TargetMethod}");
             }
             catch (Exception ex)
             {
-                Log.LogError($"Failed to apply patch for {patchConfig.TargetClass}.{patchConfig.TargetMethod}: {ex.Message}");
+                Debug.Log($"Failed to apply patch for {patchConfig.TargetClass}.{patchConfig.TargetMethod}: {ex.Message}");
+            }
+        }
+
+        private static void ApplyPatch(Type patchType)
+        {
+            if (!AppliedPatches.Contains(patchType))
+            {
+                HarmonyInstance.PatchAll(patchType);
+                AppliedPatches.Add(patchType);
+                Debug.Log($"Patch applied: {patchType.Name}");
+            }
+            else
+            {
+                Debug.Log($"Patch already applied: {patchType.Name}");
             }
         }
 
